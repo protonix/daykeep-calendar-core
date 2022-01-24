@@ -8,6 +8,7 @@
         :key="thisHour"
         :style="getCellStyle"
         :id="getDayHourId(eventRef, workingDate, thisHour - 1)"
+        @drop="drop($event)" @dragover="allowDrop($event)"
       >
         <div class="calendar-day-time-content"></div>
       </div>
@@ -30,6 +31,7 @@
           :style="calculateDayEventStyle(eventObject)"
         >
           <calendar-event
+            draggable="true" style="cursor: move;" :id="'drag_' + eventObject.id "
             :event-object="eventObject"
             :event-ref="eventRef"
             :calendar-locale="calendarLocale"
@@ -66,7 +68,82 @@
     mixins: [
       CalendarMixin,
       CalendarDayColumnTemplateMixin
-    ]
+    ],
+    methods: {
+      allowDrop(ev) {
+        ev.preventDefault();
+      },
+      drop(ev) {
+        ev.preventDefault();
+        var data = ev.dataTransfer.getData("text");
+        var new_div = ev.target.id; // calendar-2022-01-25-hour-1
+        new_div = new_div.replace('calendar-', '');
+        var parts = new_div.split('-hour-');
+        var event_date = parts[0];
+        var event_time = parts[1];
+        if( event_time <= 9 ) { event_time = '0' + event_time; }
+        event_time = event_time + ":00:00";
+        var event_id = data.replace('drag_', '');
+
+        ev.target.appendChild(document.getElementById(data));
+
+        let old_event_date = localStorage.getItem("event_date");
+        let old_event_time = localStorage.getItem("event_time");
+        //console.log( old_event_date, old_event_time );
+
+        let params = {
+          event_id: event_id,
+          event_date: event_date, event_time: event_time,
+          old_event_date: old_event_date, old_event_time: old_event_time
+        }
+        //console.log( params )
+        //............ API REQUEST .............
+        this.api_query('drag-event', 'POST', params, (data) => {
+          console.dir(data);
+        }, (error) => {
+          console.error(error);
+        });
+        //........ END - API Request
+      },
+
+      /** ==============================================================
+       * ================== Send data via API ==========================
+       * ============================================================== */
+      api_query(url, method, filter, callback, onError) {
+
+        if( !method || method == '') {  method = 'GET';  }
+
+        //............ API REQUEST .............
+
+        let requestOptions = {
+          method: method,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `bearer ${localStorage.getItem("user_token")}`,
+          }
+        };
+        if( method == 'POST' ) {
+          requestOptions.body = JSON.stringify(filter);
+        }
+        fetch(localStorage.getItem("api_url") + 'api/' + url, requestOptions)
+          .then(async response => {
+            const data = await response.json();
+            if (!response.ok) {
+              const error = (data && data.message) || response.status;
+              return Promise.reject(error);
+            } else {
+              return callback(data);
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            return onError(error);
+          });
+        // ....... END - API Request
+      },
+
+
+    }
   }
 </script>
 
