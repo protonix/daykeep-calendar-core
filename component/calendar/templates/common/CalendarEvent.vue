@@ -3,6 +3,7 @@
     :class="getEventClass()"
     :style="getEventStyle()"
     @click="handleClick"
+    @dragstart="drag($event, eventObject )"
   >
     <template v-if="renderStyle === 'singleLine' || isAllDayEvent() || (renderStyle === 'doubleLine' && eventDuration() < 45)">
       <template v-if="!eventHasPreviousDay() || ((firstDayOfWeek || isLeftmostColumn) && eventHasPreviousDay())">
@@ -24,6 +25,9 @@
       <div class="calendar-event-summary">
         {{ eventObject.summary }}
       </div>
+      <div class="color_badge" v-for="(c,index) of eventObject.staff_colors" :key="index"
+          style="width: 15px; height: 15px; margin-left: 6px; border: #FFF 1px solid; border-radius: 50%; display: inline-block; margin-right: 5px;"
+          :style="{backgroundColor: c}">&nbsp;</div>
       <div class="calendar-event-time">
         {{ formatTimeRange(eventObject.start.dateObject, eventObject.end.dateObject) }}
       </div>
@@ -64,7 +68,19 @@
       EventPropsMixin,
       CalendarEventTemplateMixin
     ],
-    components: {}
+    components: {},
+    methods: {
+      allowDrop(ev) {
+        ev.preventDefault();
+      },
+      drag( ev, eventObject ) {
+        //console.log("ID: ", ev.target.id);
+        //console.dir(eventObject)
+        localStorage.setItem("event_date", eventObject.event_date );
+        localStorage.setItem("event_time", eventObject.event_time );
+        ev.dataTransfer.setData("text", ev.target.id);
+      },
+    },
   }
 </script>
 
