@@ -29,7 +29,7 @@ export default {
         byStartDate: {},
         byId: {}
       },
-      currentTab: 'tab-month',
+      currentTab: 'tab-week-component',
       thisRefName: this.createRandomString()
     }
   },
